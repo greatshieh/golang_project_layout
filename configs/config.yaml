@@ -1,0 +1,74 @@
+# Global Configuration
+
+# zap logger configuration
+zap:
+  level: info
+  format: console
+  prefix: "[zap-prompt]"
+  director: log
+  show-line: true
+  encode-level: LowercaseColorLevelEncoder
+  stacktrace-key: stacktrace
+  log-in-console: true
+
+# redis configuration
+redis:
+  db: 0
+  addr: 127.0.0.1:6379
+  password: ""
+
+# email configuration
+email:
+  port: 465
+  from: xxx@qq.com
+  host: smtp.qq.com
+  is-ssl: true
+  secret: xxx
+  nickname: test
+
+# system configuration
+system:
+  db-type: mysql
+  use-redis: false # 使用redis
+
+# mysql connect configuration
+# 未初始化之前请勿手动修改数据库信息！！！如果一定要手动初始化请看（https://gin-vue-admin.com/docs/first_master）
+mysql:
+  path: "47.92.230.107"
+  port: "3306"
+  config: "charset=utf8mb4&parseTime=True&loc=Local"
+  db-name: "demo"
+  username: "ivan"
+  password: "greatshieh@hw"
+  max-idle-conns: 10
+  max-open-conns: 100
+  log-mode: "error"
+  log-zap: false
+
+# pgsql connect configuration
+# 未初始化之前请勿手动修改数据库信息！！！如果一定要手动初始化请看（https://gin-vue-admin.com/docs/first_master）
+pgsql:
+  path: ""
+  port: ""
+  config: ""
+  db-name: ""
+  username: ""
+  password: ""
+  max-idle-conns: 10
+  max-open-conns: 100
+  log-mode: ""
+  log-zap: false
+db-list:
+  disable: true # 是否禁用
+  type: "" # 数据库的类型,目前支持mysql、pgsql
+  alias-name: "" # 数据库的名称,注意: alias-name 需要在db-list中唯一
+  path: ""
+  port: ""
+  config: ""
+  db-name: ""
+  username: ""
+  password: ""
+  max-idle-conns: 10
+  max-open-conns: 100
+  log-mode: ""
+  log-zap: false
