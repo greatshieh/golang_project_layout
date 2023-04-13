@@ -1,0 +1,91 @@
+# Global Configuration
+# jwt configuration
+jwt:
+  signing-key: qmPlus
+  expires-time: 7d
+  buffer-time: 1d
+  issuer: qmPlus
+
+# zap logger configuration
+zap:
+  level: info
+  format: console
+  prefix: "[zap-prompt]"
+  director: log
+  show-line: true
+  encode-level: LowercaseColorLevelEncoder
+  stacktrace-key: stacktrace
+  log-in-console: true
+
+# redis configuration
+redis:
+  db: 0
+  addr: 127.0.0.1:6379
+  password: ""
+
+# email configuration
+email:
+  port: 465
+  from: xxx@qq.com
+  host: smtp.qq.com
+  is-ssl: true
+  secret: xxx
+  nickname: test
+
+# system configuration
+system:
+  env: public # Change to "develop" to skip authentication for development mode
+  addr: 8888
+  db-type: mysql
+  use-redis: false # 使用redis
+  use-multipoint: false
+  # IP限制次数 一个小时15000次
+  iplimit-count: 15000
+  #  IP限制一个小时
+  iplimit-time: 3600
+  #  路由全局前缀
+  router-prefix: ""
+
+# mysql connect configuration
+mysql:
+  path: "xx.xx.xx.xx"
+  port: "3306"
+  config: "charset=utf8mb4&parseTime=True&loc=Local"
+  db-name: "demo"
+  username: "xxx"
+  password: "xxxxxxxx"
+  max-idle-conns: 10
+  max-open-conns: 100
+  log-mode: "error"
+  log-zap: false
+
+# pgsql connect configuration
+# 未初始化之前请勿手动修改数据库信息！！！如果一定要手动初始化请看（https://gin-vue-admin.com/docs/first_master）
+pgsql:
+  path: ""
+  port: ""
+  config: ""
+  db-name: ""
+  username: ""
+  password: ""
+  max-idle-conns: 10
+  max-open-conns: 100
+  log-mode: ""
+  log-zap: false
+db-list:
+  disable: true # 是否禁用
+  type: "" # 数据库的类型,目前支持mysql、pgsql
+  alias-name: "" # 数据库的名称,注意: alias-name 需要在db-list中唯一
+  path: ""
+  port: ""
+  config: ""
+  db-name: ""
+  username: ""
+  password: ""
+  max-idle-conns: 10
+  max-open-conns: 100
+  log-mode: ""
+  log-zap: false
+
+github:
+  token: ""
