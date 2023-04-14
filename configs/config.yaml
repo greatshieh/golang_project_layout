@@ -26,6 +26,7 @@ redis:
 # email configuration
 email:
   port: 465
+  to: xxx@foxmail.com
   from: xxx@qq.com
   host: smtp.qq.com
   is-ssl: true

@@ -18,6 +18,9 @@ const (
 
 	// ErrTokenInvalid - 401: Token invalid.
 	ErrTokenInvalid
+
+	// ErrInternalServer - 500: Server Exception.
+	ErrInternalServer
 )
 
 // 通用：数据库类错误
@@ -99,4 +102,10 @@ const (
 	ErrReachMaxCount = iota + 110101
 	// ErrSecretNotFound - 404: Secret not found
 	ErrSecretNotFound
+)
+
+// 插件相关错误
+const (
+	// ErrEmailSend - 500: Email Failed
+	ErrEmailSend = iota + 110201
 )

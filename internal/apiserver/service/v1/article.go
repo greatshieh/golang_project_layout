@@ -24,5 +24,9 @@ func (articleService *ArticleService) GetArticleOne() (article *model.Article, e
 	article = &model.Article{Title: "this is a article", Desc: "this is description", Author: "Ivan"}
 	err = errors.WithCode(errcode.ErrDatabase, "未找到")
 
+	if err != nil {
+		panic("模拟异常发生")
+	}
+
 	return article, err
 }

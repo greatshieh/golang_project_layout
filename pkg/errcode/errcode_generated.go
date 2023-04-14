@@ -11,6 +11,7 @@ func init() {
 	register(ErrBind, 400, "Error occurred while binding the request body to the struct")
 	register(ErrValidation, 400, "验证失败")
 	register(ErrTokenInvalid, 401, "Token 不可用")
+	register(ErrInternalServer, 500, "内部服务器异常")
 	register(ErrDatabase, 500, "数据库错误")
 	register(ErrEncrypt, 401, "Error occurred while encrypting the user password")
 	register(ErrSignatureInvalid, 401, "Signature is invalid")
@@ -28,4 +29,5 @@ func init() {
 	register(ErrInvalidYaml, 500, "Data is not valid Yaml")
 	register(ErrEncodingYaml, 500, "Yaml data could not be encoded")
 	register(ErrDecodingYaml, 500, "Yaml data could not be decoded")
+	register(ErrEmailSend, 500, "邮件发送失败, 请联系管理员")
 }
