@@ -47,7 +47,7 @@ func RunServer() {
 	privateGroup := Router.Group(global.GVA_CONFIG.System.RouterPrefix)
 	app.InitMiddleware(privateGroup, middleware.JWTAuth(), middleware.CasbinHandler())
 	// 注册应用路由
-	Router.Use(middleware.AccessLog()).Use(middleware.Recovery())
+	Router.Use(middleware.AccessLog()).Use(middleware.Recovery()).Use(middleware.DefaultLimit())
 	router.AppRouter(Router)
 
 	// 创建email插件

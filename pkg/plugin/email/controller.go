@@ -4,9 +4,6 @@ import (
 	"golang_project_layout/pkg/global"
 	"golang_project_layout/pkg/model/common/response"
 
-	// email_response "golang_project_layout/pkg/plugin/email/model/response"
-	// "golang_project_layout/pkg/plugin/email/service"
-
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

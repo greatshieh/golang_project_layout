@@ -99,6 +99,6 @@ func AccessLog() gin.HandlerFunc {
 			EndTime:   endTime,
 		})
 
-		global.GVA_LOG.Error(string(record))
+		global.GVA_LOG.Info(string(record))
 	}
 }

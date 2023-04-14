@@ -108,4 +108,6 @@ const (
 const (
 	// ErrEmailSend - 500: Email Failed
 	ErrEmailSend = iota + 110201
+	// ErrLimitedIP - 500: Limited IP
+	ErrLimitedIP
 )

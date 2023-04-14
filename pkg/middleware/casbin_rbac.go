@@ -6,7 +6,6 @@ import (
 	"golang_project_layout/pkg/model/common/response"
 	v1 "golang_project_layout/pkg/service/v1"
 
-	// "golang_project_layout/pkg/service"
 	"golang_project_layout/pkg/utils"
 	"strconv"
 	"strings"
