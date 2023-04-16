@@ -31,4 +31,5 @@ func init() {
 	register(ErrDecodingYaml, 500, "Yaml data could not be decoded")
 	register(ErrEmailSend, 500, "邮件发送失败, 请联系管理员")
 	register(ErrLimitedIP, 500, "请求频繁")
+	register(ErrTooManyRequests, 401, "请求过多")
 }

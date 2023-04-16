@@ -2,9 +2,6 @@ package v1
 
 import (
 	"golang_project_layout/internal/apiserver/model"
-	"golang_project_layout/pkg/errcode"
-
-	"github.com/marmotedu/errors"
 )
 
 type ArticleService struct{}
@@ -22,11 +19,12 @@ func (articleService *ArticleService) GetArticleList() (list interface{}, total 
 
 func (articleService *ArticleService) GetArticleOne() (article *model.Article, err error) {
 	article = &model.Article{Title: "this is a article", Desc: "this is description", Author: "Ivan"}
-	err = errors.WithCode(errcode.ErrDatabase, "未找到")
+	// err = errors.WithCode(errcode.ErrDatabase, "未找到")
+	err = nil
 
-	if err != nil {
-		panic("模拟异常发生")
-	}
+	// if err != nil {
+	// 	panic("模拟异常发生")
+	// }
 
 	return article, err
 }

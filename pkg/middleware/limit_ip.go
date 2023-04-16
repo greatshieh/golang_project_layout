@@ -56,7 +56,7 @@ func DefaultLimit() gin.HandlerFunc {
 	return LimitConfig{
 		GenerationKey: DefaultGenerationKey,
 		CheckOrMark:   DefaultCheckOrMark,
-		Expire:        global.GVA_CONFIG.System.LimitTimeIP,
+		Expire:        global.GVA_CONFIG.System.LimitIntervalIP,
 		Limit:         global.GVA_CONFIG.System.LimitCountIP,
 	}.LimitWithTime()
 }

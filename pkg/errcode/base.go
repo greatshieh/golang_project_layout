@@ -21,6 +21,9 @@ const (
 
 	// ErrInternalServer - 500: Server Exception.
 	ErrInternalServer
+
+	// ErrTooManyRequests - 429: Too many requests
+	ErrTooManyRequests
 )
 
 // 通用：数据库类错误
