@@ -1,4 +1,4 @@
-package middleware
+package limiter
 
 import (
 	"context"
@@ -7,26 +7,45 @@ import (
 	"golang_project_layout/pkg/model/common/response"
 	"time"
 
-	"github.com/marmotedu/errors"
-
 	"github.com/gin-gonic/gin"
+	"github.com/juju/ratelimit"
+	"github.com/marmotedu/errors"
 	"go.uber.org/zap"
 )
 
-type LimitConfig struct {
-	// GenerationKey 根据业务生成key 下面CheckOrMark查询生成
-	GenerationKey func(c *gin.Context) string
-	// 检查函数,用户可修改具体逻辑,更加灵活
-	CheckOrMark func(key string, expire int, limit int) error
-	// Expire key 过期时间
-	Expire int
-	// Limit 周期时间
-	Limit int
+type IPLimiter struct {
+	LimitCountIP    int64
+	LimitIntervalIP int64
 }
 
-func (l LimitConfig) LimitWithTime() gin.HandlerFunc {
+func NewIPLimiter() LimiterIface {
+	return &IPLimiter{LimitCountIP: global.GVA_CONFIG.System.LimitCountIP, LimitIntervalIP: global.GVA_CONFIG.System.LimitIntervalIP}
+}
+
+func (l *IPLimiter) Key(c *gin.Context) string {
+	return "GVA_Limit" + c.ClientIP()
+}
+
+func (l *IPLimiter) GetBucket(key string) (*ratelimit.Bucket, bool) {
+	return nil, true
+}
+
+func (l *IPLimiter) AddBuckets(rules ...LimiterBucketRules) {
+	for _, rule := range rules {
+		if rule.FillInterval > 0 {
+			l.LimitIntervalIP = rule.FillInterval
+		}
+
+		if rule.Capacity > 0 {
+			l.LimitCountIP = rule.Capacity
+		}
+	}
+}
+
+func (l *IPLimiter) Register() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if err := l.CheckOrMark(l.GenerationKey(c), l.Expire, l.Limit); err != nil {
+		key := l.Key(c)
+		if err := checkOrMark(key, l.LimitIntervalIP, l.LimitCountIP); err != nil {
 			response.WriteResponse(c, errors.WithCode(errcode.ErrLimitedIP, err.Error()), nil)
 			c.Abort()
 			return
@@ -36,33 +55,19 @@ func (l LimitConfig) LimitWithTime() gin.HandlerFunc {
 	}
 }
 
-// DefaultGenerationKey 默认生成key
-func DefaultGenerationKey(c *gin.Context) string {
-	return "GVA_Limit" + c.ClientIP()
-}
-
-func DefaultCheckOrMark(key string, expire int, limit int) (err error) {
+func checkOrMark(key string, interval int64, count int64) (err error) {
 	// ! 判断是否开启redis, 需要在config中配置开启redis
 	if global.GVA_REDIS == nil {
-		return err
+		return errors.New("没有开启redis")
 	}
-	if err = SetLimitWithTime(key, limit, time.Duration(expire)*time.Second); err != nil {
+	if err = setLimitWithTime(key, count, time.Duration(interval)*time.Second); err != nil {
 		global.GVA_LOG.Error("limit", zap.Error(err))
 	}
 	return err
 }
 
-func DefaultLimit() gin.HandlerFunc {
-	return LimitConfig{
-		GenerationKey: DefaultGenerationKey,
-		CheckOrMark:   DefaultCheckOrMark,
-		Expire:        global.GVA_CONFIG.System.LimitIntervalIP,
-		Limit:         global.GVA_CONFIG.System.LimitCountIP,
-	}.LimitWithTime()
-}
-
-// SetLimitWithTime 设置访问次数
-func SetLimitWithTime(key string, limit int, expiration time.Duration) error {
+// setLimitWithTime 设置访问次数
+func setLimitWithTime(key string, limit int64, interval time.Duration) error {
 	count, err := global.GVA_REDIS.Exists(context.Background(), key).Result()
 	if err != nil {
 		return err
@@ -70,7 +75,7 @@ func SetLimitWithTime(key string, limit int, expiration time.Duration) error {
 	if count == 0 {
 		pipe := global.GVA_REDIS.TxPipeline()
 		pipe.Incr(context.Background(), key)
-		pipe.Expire(context.Background(), key, expiration)
+		pipe.Expire(context.Background(), key, interval)
 		_, err = pipe.Exec(context.Background())
 		return err
 	} else {
@@ -78,7 +83,7 @@ func SetLimitWithTime(key string, limit int, expiration time.Duration) error {
 		if times, err := global.GVA_REDIS.Get(context.Background(), key).Int(); err != nil {
 			return err
 		} else {
-			if times >= limit {
+			if int64(times) >= limit {
 				if t, err := global.GVA_REDIS.PTTL(context.Background(), key).Result(); err != nil {
 					return errors.New("请求太过频繁，请稍后再试")
 				} else {

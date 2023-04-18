@@ -1,8 +1,6 @@
 package limiter
 
 import (
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/juju/ratelimit"
 )
@@ -16,6 +14,8 @@ type LimiterIface interface {
 	GetBucket(key string) (*ratelimit.Bucket, bool)
 	// 新增多个令牌桶
 	AddBuckets(rules ...LimiterBucketRules)
+	// 限流器执行
+	Register() gin.HandlerFunc
 }
 
 type Limiter struct {
@@ -26,7 +26,7 @@ type LimiterBucketRules struct {
 	// 自定义键值对名称
 	Key string
 	// 间隔多久时间放N个令牌
-	FillInterval time.Duration
+	FillInterval int64
 	// 令牌桶容量
 	Capacity int64
 	// 每次到达时间间隔后所放的具体令牌数量

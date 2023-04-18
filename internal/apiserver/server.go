@@ -6,11 +6,11 @@ import (
 	"golang_project_layout/pkg/app"
 	"golang_project_layout/pkg/global"
 	"golang_project_layout/pkg/middleware"
+	"golang_project_layout/pkg/middleware/limiter"
 	sysRouter "golang_project_layout/pkg/router"
 	"time"
 
 	"golang_project_layout/pkg/plugin/email"
-	"golang_project_layout/pkg/plugin/limiter"
 
 	"github.com/fvbock/endless"
 	"github.com/gin-gonic/gin"
@@ -47,13 +47,11 @@ func RunServer() {
 	// 注册全局中间件
 	privateGroup := Router.Group(global.GVA_CONFIG.System.RouterPrefix)
 	app.InitMiddleware(privateGroup, middleware.JWTAuth(), middleware.CasbinHandler())
+
+	// 注册中间件
+	Router.Use(middleware.AccessLog()).Use(middleware.Recovery())
+	Router.Use(middleware.RateLimiter("ip", limiter.LimiterBucketRules{FillInterval: 60, Capacity: 2}))
 	// 注册应用路由
-	Router.Use(middleware.AccessLog()).Use(middleware.Recovery()) //.Use(middleware.DefaultLimit())
-	// 新建一个限流器
-	l := limiter.NewMehtodLimiter()
-	// 添加令牌桶规则
-	// l.AddBuckets(limiter.LimiterBucketRules{Key: "", FillInterval: 60 * time.Second, Capacity: 2, Quantum: 1})
-	Router.Use(middleware.RateLimiter(l, limiter.LimiterBucketRules{Key: "", FillInterval: 60 * time.Second, Capacity: 2, Quantum: 1}))
 	router.AppRouter(Router)
 
 	// 创建email插件
