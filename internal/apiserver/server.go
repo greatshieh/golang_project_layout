@@ -6,6 +6,7 @@ import (
 	"golang_project_layout/pkg/app"
 	"golang_project_layout/pkg/global"
 	"golang_project_layout/pkg/middleware"
+	"golang_project_layout/pkg/middleware/limiter"
 	sysRouter "golang_project_layout/pkg/router"
 	"time"
 
@@ -49,7 +50,7 @@ func RunServer() {
 
 	// 注册中间件
 	Router.Use(middleware.AccessLog()).Use(middleware.Recovery(true))
-	// Router.Use(middleware.RateLimiter("ip", limiter.LimiterBucketRules{FillInterval: 60, Capacity: 2}))
+	Router.Use(middleware.RateLimiter("ip", limiter.LimiterBucketRules{FillInterval: 60, Capacity: 2}))
 	// 注册应用路由
 	router.AppRouter(Router)
 

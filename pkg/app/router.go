@@ -14,7 +14,7 @@ import (
 
 // 初始化路由
 func InitRouter() *gin.Engine {
-	Router := gin.Default()
+	Router := gin.New()
 
 	// 注册swagger路由
 	docs.SwaggerInfo.BasePath = global.GVA_CONFIG.System.RouterPrefix
