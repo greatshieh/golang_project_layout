@@ -16,10 +16,11 @@ import (
 type IPLimiter struct {
 	LimitCountIP    int64
 	LimitIntervalIP int64
+	LimiterBuckets  map[string]*ratelimit.Bucket
 }
 
 func NewIPLimiter() LimiterIface {
-	return &IPLimiter{LimitCountIP: global.GVA_CONFIG.System.LimitCountIP, LimitIntervalIP: global.GVA_CONFIG.System.LimitIntervalIP}
+	return &IPLimiter{LimitCountIP: global.GVA_CONFIG.System.LimitCountIP, LimitIntervalIP: global.GVA_CONFIG.System.LimitIntervalIP, LimiterBuckets: make(map[string]*ratelimit.Bucket)}
 }
 
 func (l *IPLimiter) Key(c *gin.Context) string {
@@ -27,7 +28,11 @@ func (l *IPLimiter) Key(c *gin.Context) string {
 }
 
 func (l *IPLimiter) GetBucket(key string) (*ratelimit.Bucket, bool) {
-	return nil, true
+	// if l.LimiterBuckets == nil {
+	// 	return nil, true
+	// }
+	bucket, ok := l.LimiterBuckets[key]
+	return bucket, ok
 }
 
 func (l *IPLimiter) AddBuckets(rules ...LimiterBucketRules) {
@@ -45,51 +50,71 @@ func (l *IPLimiter) AddBuckets(rules ...LimiterBucketRules) {
 func (l *IPLimiter) Register() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		key := l.Key(c)
-		if err := checkOrMark(key, l.LimitIntervalIP, l.LimitCountIP); err != nil {
+		if err := l.CheckOrMark(key); err != nil {
 			response.WriteResponse(c, errors.WithCode(errcode.ErrLimitedIP, err.Error()), nil)
 			c.Abort()
 			return
-		} else {
-			c.Next()
 		}
+
+		c.Next()
 	}
 }
 
-func checkOrMark(key string, interval int64, count int64) (err error) {
+func (l *IPLimiter) CheckOrMark(key string) (err error) {
 	// ! 判断是否开启redis, 需要在config中配置开启redis
 	if global.GVA_REDIS == nil {
-		return errors.New("没有开启redis")
+		// 没有开启redis, 规则保存在内存中
+		if bucket, ok := l.GetBucket(key); !ok {
+			l.LimiterBuckets[key] = ratelimit.NewBucketWithQuantum(time.Duration(l.LimitIntervalIP)*time.Second, l.LimitCountIP, l.LimitCountIP)
+			l.LimiterBuckets[key].TakeAvailable(1)
+		} else {
+			// 已经添加了规则
+			count := bucket.TakeAvailable(1)
+			if count == 0 {
+				err = errors.New("请求太过频繁，请稍后再试")
+			}
+		}
+	} else {
+		// 开启redis, 规则保存在redis中
+		if err = setLimitWithTime(key, l.LimitCountIP, time.Duration(l.LimitIntervalIP)*time.Second); err != nil {
+			global.GVA_LOG.Error("limit", zap.Error(err))
+		}
 	}
-	if err = setLimitWithTime(key, count, time.Duration(interval)*time.Second); err != nil {
-		global.GVA_LOG.Error("limit", zap.Error(err))
-	}
+
 	return err
 }
 
 // setLimitWithTime 设置访问次数
 func setLimitWithTime(key string, limit int64, interval time.Duration) error {
+	// 检查key是否存在
 	count, err := global.GVA_REDIS.Exists(context.Background(), key).Result()
 	if err != nil {
 		return err
 	}
 	if count == 0 {
+		// key值不存在
 		pipe := global.GVA_REDIS.TxPipeline()
+		// 设置key值
 		pipe.Incr(context.Background(), key)
+		// 设置有效期
 		pipe.Expire(context.Background(), key, interval)
 		_, err = pipe.Exec(context.Background())
 		return err
 	} else {
-		// 次数
+		// key存在
 		if times, err := global.GVA_REDIS.Get(context.Background(), key).Int(); err != nil {
 			return err
 		} else {
 			if int64(times) >= limit {
+				// 访问次数达到允许次数
 				if t, err := global.GVA_REDIS.PTTL(context.Background(), key).Result(); err != nil {
 					return errors.New("请求太过频繁，请稍后再试")
 				} else {
+					// 返回以毫秒为单位的剩余过期时间
 					return errors.New("请求太过频繁, 请 " + t.String() + " 秒后尝试")
 				}
 			} else {
+				// 在允许次数内, redis + 1
 				return global.GVA_REDIS.Incr(context.Background(), key).Err()
 			}
 		}
