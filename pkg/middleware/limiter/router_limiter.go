@@ -1,8 +1,10 @@
 package limiter
 
 import (
+	"fmt"
 	"golang_project_layout/pkg/errcode"
 	"golang_project_layout/pkg/model/common/response"
+	"golang_project_layout/pkg/options"
 	"strings"
 	"time"
 
@@ -36,7 +38,7 @@ func (l *RouterLimiter) GetBucket(key string) (*ratelimit.Bucket, bool) {
 	return bucket, ok
 }
 
-func (l *RouterLimiter) AddBuckets(rules ...LimiterBucketRules) {
+func (l *RouterLimiter) AddBuckets(rules ...options.Rule) {
 	for _, rule := range rules {
 		if _, ok := l.limiterBuckets[rule.Key]; !ok {
 			l.limiterBuckets[rule.Key] = ratelimit.NewBucketWithQuantum(time.Duration(rule.FillInterval)*time.Second, rule.Capacity, rule.Quantum)
@@ -44,9 +46,10 @@ func (l *RouterLimiter) AddBuckets(rules ...LimiterBucketRules) {
 	}
 }
 
-func (l RouterLimiter) Register() gin.HandlerFunc {
+func (l *RouterLimiter) Register() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		key := l.Key(c)
+		fmt.Println(key)
 		if bucket, ok := l.GetBucket(key); ok {
 			count := bucket.TakeAvailable(1)
 			if count == 0 {

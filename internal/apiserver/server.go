@@ -5,9 +5,6 @@ import (
 	"golang_project_layout/internal/apiserver/router"
 	"golang_project_layout/pkg/app"
 	"golang_project_layout/pkg/global"
-	"golang_project_layout/pkg/middleware"
-	"golang_project_layout/pkg/middleware/limiter"
-	sysRouter "golang_project_layout/pkg/router"
 	"time"
 
 	"golang_project_layout/pkg/plugin/email"
@@ -21,7 +18,15 @@ type server interface {
 	ListenAndServe() error
 }
 
-func RunServer() {
+type GenericServer struct {
+	Name        string
+	Description string
+	*gin.Engine
+}
+
+func NewServer(name string) *GenericServer {
+	genericServer := &GenericServer{Name: name, Engine: gin.New()}
+
 	if global.GVA_CONFIG.System.UseMultipoint || global.GVA_CONFIG.System.UseRedis {
 		// 初始化redis服务
 		app.Redis()
@@ -33,26 +38,58 @@ func RunServer() {
 	// 	system.LoadAll()
 	// }
 
-	// 初始化路由
-	Router := app.InitRouter()
-	// 声明不需要鉴权的基础路由
-	baseRouter := new(sysRouter.BaseRouter)
-	// 注册基础路由
-	app.InitSystemRouter(Router, global.GVA_CONFIG.System.RouterPrefix, baseRouter)
-	// 声明需要注册的系统路由
-	jwtRouter := new(sysRouter.JwtRouter)
-	userRouter := new(sysRouter.UserRouter)
-	// 注册系统路由
-	app.InitSystemRouter(Router, global.GVA_CONFIG.System.RouterPrefix, jwtRouter, userRouter)
-	// 注册全局中间件
-	privateGroup := Router.Group(global.GVA_CONFIG.System.RouterPrefix)
-	app.InitMiddleware(privateGroup, middleware.JWTAuth(), middleware.CasbinHandler())
+	// 注册默认系统基础路由
+	app.InstalltSystemRouter(genericServer.Engine, global.GVA_CONFIG.System.SystemRouters)
 
 	// 注册中间件
-	Router.Use(middleware.AccessLog()).Use(middleware.Recovery(true))
-	Router.Use(middleware.RateLimiter("ip", limiter.LimiterBucketRules{FillInterval: 60, Capacity: 2}))
+	app.InstalltMiddleware(genericServer.Engine, global.GVA_CONFIG.System.Middleware)
+
+	// 注册限流器
+	app.InitstallRateLimiter(genericServer.Engine)
+
+	// 创建email插件
+	emailPlugin := email.CreateEmailPlug(
+		global.GVA_CONFIG.Email.To,
+		global.GVA_CONFIG.Email.From,
+		global.GVA_CONFIG.Email.Host,
+		global.GVA_CONFIG.Email.Secret,
+		global.GVA_CONFIG.Email.Nickname,
+		global.GVA_CONFIG.Email.Port,
+		global.GVA_CONFIG.Email.IsSSL,
+	)
+	// 注册需要的插件
+	app.InstallPlugin(genericServer.Engine, emailPlugin)
+
 	// 注册应用路由
-	router.AppRouter(Router)
+	router.AppRouter(genericServer.Engine)
+
+	return genericServer
+}
+
+func RunServer(name string) {
+	genericServer := &GenericServer{Name: name, Engine: gin.New()}
+
+	if global.GVA_CONFIG.System.UseMultipoint || global.GVA_CONFIG.System.UseRedis {
+		// 初始化redis服务
+		app.Redis()
+	}
+
+	// TODO
+	// 从db加载jwt数据
+	// if global.GVA_DB != nil {
+	// 	system.LoadAll()
+	// }
+
+	// 注册默认系统基础路由
+	app.InstalltSystemRouter(genericServer.Engine, global.GVA_CONFIG.System.SystemRouters)
+
+	// 注册中间件
+	app.InstalltMiddleware(genericServer.Engine, global.GVA_CONFIG.System.Middleware)
+
+	// TODO 注册插件
+
+	// 注册应用路由
+	router.AppRouter(genericServer.Engine)
 
 	// 创建email插件
 	emailPlugin := email.CreateEmailPlug(
@@ -65,16 +102,30 @@ func RunServer() {
 		global.GVA_CONFIG.Email.IsSSL,
 	)
 	// 安装需要的插件
-	app.InstallPlugin(Router, emailPlugin) // 安装插件
+	app.InstallPlugin(genericServer.Engine, emailPlugin) // 安装插件
 
 	address := fmt.Sprintf(":%d", global.GVA_CONFIG.System.Addr)
-	s := initServer(address, Router)
+	s := initServer(address, genericServer.Engine)
 	// 保证文本顺序输出
 	// In order to ensure that the text order output can be deleted
 	time.Sleep(10 * time.Microsecond)
 	global.GVA_LOG.Info("server run success on ", zap.String("address", address))
 
 	global.GVA_LOG.Error(s.ListenAndServe().Error())
+}
+
+func (s *GenericServer) Run() server {
+	address := fmt.Sprintf(":%d", global.GVA_CONFIG.System.Addr)
+	srv := endless.NewServer(address, s.Engine)
+	srv.ReadHeaderTimeout = 20 * time.Second
+	srv.WriteTimeout = 20 * time.Second
+	srv.MaxHeaderBytes = 1 << 20
+
+	time.Sleep(10 * time.Microsecond)
+	global.GVA_LOG.Info("server run success on ", zap.String("address", address))
+
+	global.GVA_LOG.Error(srv.ListenAndServe().Error())
+	return srv
 }
 
 func initServer(address string, router *gin.Engine) server {

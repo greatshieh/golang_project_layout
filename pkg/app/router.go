@@ -1,50 +1,50 @@
 package app
 
 import (
+	"fmt"
+	"golang_project_layout/docs"
 	"golang_project_layout/pkg/global"
 	"golang_project_layout/pkg/router"
 	"net/http"
-
-	"golang_project_layout/docs"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// 初始化路由
-func InitRouter() *gin.Engine {
-	Router := gin.New()
-
+// 初始化系统路由
+func InstalltSystemRouter(engine *gin.Engine, routers []string) {
 	// 注册swagger路由
 	docs.SwaggerInfo.BasePath = global.GVA_CONFIG.System.RouterPrefix
-	Router.GET(global.GVA_CONFIG.System.RouterPrefix+"/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	engine.GET(global.GVA_CONFIG.System.RouterPrefix+"/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	global.GVA_LOG.Info("register swagger handler")
 
 	// 添加统一的路由前缀
-	PublicGroup := Router.Group(global.GVA_CONFIG.System.RouterPrefix)
+	PublicGroup := engine.Group(global.GVA_CONFIG.System.RouterPrefix)
 
 	// 健康监测
 	PublicGroup.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "ok")
 	})
 
-	return Router
-}
+	defaultRouters := defaultRouter()
 
-// 初始化系统路由
-func InitSystemRouter(g gin.IRouter, prefix string, systemRouterGroup ...router.Router) {
-	routerGroup := g.Group(prefix)
-	for _, systemRouter := range systemRouterGroup {
-		systemRouter.InitRouter(routerGroup)
+	for _, r := range global.GVA_CONFIG.System.SystemRouters {
+		dr, ok := defaultRouters[r]
+		if !ok {
+			global.GVA_LOG.Error(fmt.Sprintf("未找到 %s 相关路由", r))
+			continue
+		}
+
+		dr.InitRouter(PublicGroup)
 	}
 	global.GVA_LOG.Info("system router register success")
 }
 
-// 注册中间件
-func InitMiddleware(R gin.IRoutes, middleware ...gin.HandlerFunc) {
-	for _, m := range middleware {
-		R.Use(m)
+func defaultRouter() map[string]router.Router {
+	return map[string]router.Router{
+		"base": &router.BaseRouter{},
+		"jwt":  &router.JwtRouter{},
+		"user": &router.UserRouter{},
 	}
-	global.GVA_LOG.Info("middleware register success")
 }

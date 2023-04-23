@@ -1,13 +1,15 @@
 package middleware
 
 import (
+	"fmt"
 	"golang_project_layout/pkg/middleware/limiter"
+	"golang_project_layout/pkg/options"
 
 	"github.com/gin-gonic/gin"
 )
 
 // 新建一个限流器
-func RateLimiter(limiterType string, rules ...limiter.LimiterBucketRules) gin.HandlerFunc {
+func RateLimiter(limiterType string, rules ...options.Rule) gin.HandlerFunc {
 	var l limiter.LimiterIface
 	switch limiterType {
 	case "router":
@@ -18,6 +20,7 @@ func RateLimiter(limiterType string, rules ...limiter.LimiterBucketRules) gin.Ha
 		l = limiter.NewRouterLimiter()
 	}
 
+	fmt.Println(rules)
 	l.AddBuckets(rules...)
 	return l.Register()
 }

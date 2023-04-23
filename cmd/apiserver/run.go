@@ -23,6 +23,5 @@ func main() {
 		db, _ := global.GVA_DB.DB()
 		defer db.Close()
 	}
-
-	apiserver.RunServer()
+	apiserver.NewServer("api server").Run()
 }

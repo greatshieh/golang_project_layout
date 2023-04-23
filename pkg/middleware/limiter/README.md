@@ -48,7 +48,7 @@ type LimiterBucketRules struct {
 
 ```go
 // 新建一个限流器
-func RateLimiter(limiterType string, rules ...limiter.LimiterBucketRules) gin.HandlerFunc {
+func RateLimiter(limiterType string, rules ...options.Rule) gin.HandlerFunc {
  var l limiter.LimiterIface
  switch limiterType {
  case "router":
@@ -67,5 +67,5 @@ func RateLimiter(limiterType string, rules ...limiter.LimiterBucketRules) gin.Ha
 根据输入的限流器类型, 自动创建限流器, 同时设置相应的规则。
 
 ```go
-RateLimiter("ip", limiter.LimiterBucketRules{FillInterval: 60, Capacity: 2})
+RateLimiter("ip", options.Rule{FillInterval: 60, Capacity: 2})
 ```

@@ -40,12 +40,28 @@ system:
   db-type: mysql
   use-redis: false # 使用redis
   use-multipoint: false
-  # IP限制次数 一个小时15000次
-  iplimit-count: 15000
-  #  IP限制一个小时
-  iplimit-interval: 3600
   #  路由全局前缀
   router-prefix: ""
+  # 需要注册的系统路由, 用“,”隔开
+  system-router: "base,jwt,user"
+  # 需要注册的全局中间件, 用","隔开
+  middleware: "recovery,access_log"
+  # 需要注册的插件, 用","隔开
+  plugins: "email"
+
+# 限流器
+ratelimiter:
+  # 限流器类型, router - 路由限流器, ip - IP限流器
+  - type: "router"
+    rules:
+      # 当类型为router时, 定义需要限流的路径; 当类型为ip时, 可以为空
+      - key: "/article"
+        # 限流器的间隔时间, 即过期时间
+        interval: 60
+        # 限流器容量
+        capacity: 2
+        # 当类型为router时, 为每interval时间往bucket中放入的令牌数
+        quantum: 2
 
 # mysql connect configuration
 mysql:

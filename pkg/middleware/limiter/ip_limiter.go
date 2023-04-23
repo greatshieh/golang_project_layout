@@ -5,6 +5,7 @@ import (
 	"golang_project_layout/pkg/errcode"
 	"golang_project_layout/pkg/global"
 	"golang_project_layout/pkg/model/common/response"
+	"golang_project_layout/pkg/options"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +21,7 @@ type IPLimiter struct {
 }
 
 func NewIPLimiter() LimiterIface {
-	return &IPLimiter{LimitCountIP: global.GVA_CONFIG.System.LimitCountIP, LimitIntervalIP: global.GVA_CONFIG.System.LimitIntervalIP, LimiterBuckets: make(map[string]*ratelimit.Bucket)}
+	return &IPLimiter{LimiterBuckets: make(map[string]*ratelimit.Bucket)}
 }
 
 func (l *IPLimiter) Key(c *gin.Context) string {
@@ -28,14 +29,11 @@ func (l *IPLimiter) Key(c *gin.Context) string {
 }
 
 func (l *IPLimiter) GetBucket(key string) (*ratelimit.Bucket, bool) {
-	// if l.LimiterBuckets == nil {
-	// 	return nil, true
-	// }
 	bucket, ok := l.LimiterBuckets[key]
 	return bucket, ok
 }
 
-func (l *IPLimiter) AddBuckets(rules ...LimiterBucketRules) {
+func (l *IPLimiter) AddBuckets(rules ...options.Rule) {
 	for _, rule := range rules {
 		if rule.FillInterval > 0 {
 			l.LimitIntervalIP = rule.FillInterval
